@@ -1,64 +1,135 @@
-﻿using AgendaDeContacto.Models;
+﻿using AgendaDeContacto.Interfaces;
+using AgendaDeContacto.Models;
 using AgendaDeContacto.Servicios;
 using AgendaDeContacto.Utils;
 
 namespace AgendaDeContacto.App
 {
+	// Clase encargada de la ejecucion interactiva de la agenda de contactos.
+	// Presenta un menu en consola para el usuario agregue, busque, elimine y vea contactos.
 	public class AgendaApp
 	{
-		private readonly ListaEnlazadaAgenda lista;
+		private readonly IListaEnlazada<Contacto> lista;
 
-		public AgendaApp()
+		// Constructor que inicializa la lista enlazada de contactos.
+		public AgendaApp(IListaEnlazada<Contacto> lista)
 		{
-			lista = new ListaEnlazadaAgenda();
+			this.lista = lista;
 		}
 
+		// Inicia el ciclo principal de ejecución mostrando el menú interactivo.
 		public void Ejecutar()
 		{
 			Console.Clear();
-			MostrarTitulo("Agenda de Contactos Dinamica.");
+			MostrarTitulo("Agenda de Contactos Interactiva.");
 
-			AgregarContactos();
-			Pausa();
+			while (true)
+			{
+				MostrarMenu();
 
-			MostrarSeccion("Contactos Registrados.");
+				Console.Write("\n Elige una opcon (1-5): ");
+				string? opcion = Console.ReadLine();
+
+				switch (opcion)
+				{
+					case "1":
+						AgregarContactoInteractivo();
+						break;
+					case "2":
+						BuscarContactoInteractivo();
+						break;
+					case "3":
+						EliminarContactoInteractivo();
+						break;
+					case "4":
+						MostrarContactos();
+						break;
+					case "5":
+						ConsolaHelper.TextHelper("\nSaliendo de la agenda. ¡Hasta luego!", ConsoleColor.Cyan);
+						return;
+					default:
+						ConsolaHelper.TextHelper("Opción no válida. Intenta de nuevo.", ConsoleColor.Red);
+						break;
+				}
+				Pausa();
+			}
+		}
+
+		// Muestra el menú principal de la agenda.
+		private void MostrarMenu()
+		{
+			Console.ForegroundColor = ConsoleColor.Yellow;
+			Console.WriteLine("\n================ MENÚ =================");
+			Console.WriteLine("1. Agregar contacto");
+			Console.WriteLine("2. Buscar contacto por nombre");
+			Console.WriteLine("3. Eliminar contacto por nombre");
+			Console.WriteLine("4. Mostrar todos los contactos");
+			Console.WriteLine("5. Salir");
+			Console.WriteLine("=======================================");
+			Console.ResetColor();
+		}
+
+		// Permite al usuario ingresar los datos de un nuevo contacto para agregarlo.
+		private void AgregarContactoInteractivo()
+		{
+			Console.WriteLine("\n--- Agregar nuevo contacto ---");
+
+			Console.Write("Nombre: ");
+			string? nombre = Console.ReadLine();
+
+			Console.Write("Teléfono: ");
+			string? telefono = Console.ReadLine();
+
+			Console.Write("Correo: ");
+			string? correo = Console.ReadLine();
+
+			Contacto nuevo = new Contacto(nombre!, telefono!, correo!);
+			lista.AgregarAlFinal(nuevo);
+
+			ConsolaHelper.TextHelper("Contacto agregado correctamente.", ConsoleColor.Green);
+		}
+
+		// Solicita un nombre y muestra si el contacto fue encontrado.
+		private void BuscarContactoInteractivo()
+		{
+			Console.Write("\nIngresa el nombre a buscar: ");
+			string? nombre = Console.ReadLine();
+
+			bool encontrado = lista.BuscarContacto(nombre!);
+
+			if (encontrado)
+				ConsolaHelper.TextHelper("Contacto encontrado.", ConsoleColor.Green);
+			else
+				ConsolaHelper.TextHelper("Contacto no encontrado.", ConsoleColor.Red);
+		}
+
+		// Solicita un nombre y elimina el contacto si existe.
+		private void EliminarContactoInteractivo()
+		{
+			Console.Write("\nIngresa el nombre a eliminar: ");
+			string? nombre = Console.ReadLine();
+
+			bool encontrado = lista.BuscarContacto(nombre!);
+
+			if (encontrado)
+			{
+				lista.EliminarPorNombre(nombre!);
+				ConsolaHelper.TextHelper("Contacto eliminado correctamente.", ConsoleColor.Green);
+			}
+			else
+			{
+				ConsolaHelper.TextHelper("Contacto no encontrado.", ConsoleColor.Red);
+			}
+		}
+
+		// Muestra todos los contactos registrados.
+		private void MostrarContactos()
+		{
+			Console.WriteLine("\n--- Contactos registrados ---");
 			lista.MostrarTodos();
-			Pausa();
-
-			MostrarSeccion("Buscar Contactos.");
-			BuscarContactos();
-			Pausa();
-
-			MostrarSeccion("Eliminar Contact Existente.");
-			lista.EliminarPorNombre("Fulano");
-			Pausa();
-
-			MostrarSeccion("Estado Final de la Agenda.");
-			lista.MostrarTodos();
 		}
 
-		private void AgregarContactos()
-		{
-			lista.AgregarAlInicio(new Contacto("Michael", "809-010-0011", "michael@gmail.com"));
-			lista.AgregarAlInicio(new Contacto("Alexander", "829-020-0022", "alexander@gmail.com"));
-			lista.AgregarAlFinal(new Contacto("Carlos", "829-030-0033", "carlos@gmail.com"));
-			lista.AgregarAlFinal(new Contacto("Francis", "809-040-0044", "francis@gmail.com"));
-		}
-
-		private void BuscarContactos()
-		{
-			Buscar("Francis");
-			Buscar("carlos");
-		}
-
-		private void Buscar(string nombre)
-		{
-			bool encontrado = lista.BuscarContacto(nombre);
-			ConsoleColor color = encontrado ? ConsoleColor.Green : ConsoleColor.Red;
-			ConsolaHelper.TextHelper($"Buscar {nombre}: {(encontrado ? "Encontrado" : "No encontrado")}", color);
-		}
-
-		// Presentacion visual
+		// Muestra un título decorativo centrado.
 		private void MostrarTitulo(string titulo)
 		{
 			Console.ForegroundColor = ConsoleColor.Cyan;
@@ -68,18 +139,10 @@ namespace AgendaDeContacto.App
 			Console.ResetColor();
 		}
 
-		private void MostrarSeccion(string texto)
-		{
-			Console.ForegroundColor = ConsoleColor.Yellow;
-			Console.WriteLine("\n-------------------------------------------------------------");
-			Console.WriteLine(texto.ToUpper().PadLeft((60 + texto.Length) / 2).PadRight(60));
-			Console.WriteLine("-------------------------------------------------------------");
-			Console.ResetColor();
-		}
-
+		// Pausa la aplicación hasta que el usuario presione una tecla.
 		private void Pausa()
 		{
-			Console.WriteLine("\nPresiona cualquier tecla para continuar...");
+			Console.WriteLine("\nPresiona una tecla para continuar...");
 			Console.ReadKey();
 			Console.Clear();
 		}
